@@ -1,0 +1,20 @@
+<xs:schema attributeFormDefault="unqualified" elementFormDefault="qualified" xmlns:xs="http://www.w3.org/2001/XMLSchema">
+  <xs:element name="Orders">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="Order" maxOccurs="unbounded" minOccurs="0">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element type="xs:string" name="OrderType"/>
+              <xs:element type="xs:string" name="Account"/>
+              <xs:element type="xs:string" name="CurrencyPair"/>
+              <xs:element type="xs:string" name="Ammount"/>
+              <xs:element type="xs:string" name="ExchangeRate"/>
+              <xs:element type="xs:string" name="ExpirationDate"/>
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+</xs:schema>
