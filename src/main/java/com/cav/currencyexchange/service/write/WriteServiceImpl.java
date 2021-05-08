@@ -96,7 +96,7 @@ public class WriteServiceImpl implements WriteService{
 		        .append(".txt");
 		FileWriter myWriter = null;
 		 try {
-		    log.info("write to "+path.toString());
+		    //log.info("write to "+path.toString());
 			myWriter = new FileWriter(path.toString());
 			for(CurrencyOrder order : writeToOrders){
 				myWriter.write(order.toString());

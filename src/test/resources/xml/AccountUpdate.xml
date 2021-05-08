@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<AccountRequest>
+	<AccountName>PartnerA</AccountName>
+	<AccountAmounts>
+		<AccountAmount>
+			<Currency>GBP</Currency>
+			<Amount>1000000</Amount>
+		</AccountAmount>
+		<AccountAmount>
+			<Currency>USD</Currency>
+			<Amount>1000000</Amount>
+		</AccountAmount>
+	</AccountAmounts>
+</AccountRequest>

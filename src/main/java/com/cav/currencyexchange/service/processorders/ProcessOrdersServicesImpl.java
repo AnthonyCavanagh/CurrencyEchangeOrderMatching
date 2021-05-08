@@ -12,6 +12,7 @@ import org.springframework.stereotype.Service;
 
 import com.cav.currencyexchange.cache.OrdersCache;
 import com.cav.currencyexchange.models.CurrencyOrder;
+import com.cav.currencyexchange.repository.CurrencyRepository;
 import com.cav.currencyexchange.service.ServiceBase;
 import com.cav.currencyexchange.service.load.LoadOdersLiveMessaging;
 import com.cav.currencyexchange.service.load.LoadOdersLiveMessagingImpl;
@@ -24,10 +25,12 @@ import com.cav.currencyexchangebroker.generated.Orders.Order;
 public class ProcessOrdersServicesImpl extends ServiceBase  implements ProcessOrdersServices {
 	
 	private List <Order> orders = null;
+	CurrencyRepository currencyRepository = null;
 
-	public ProcessOrdersServicesImpl(List <Order> orders) {
+	public ProcessOrdersServicesImpl(List <Order> orders, CurrencyRepository currencyRepository) {
 		super();
 		this.orders =orders;
+		this.currencyRepository = currencyRepository;
 	}
 
 	@Override
@@ -49,7 +52,7 @@ public class ProcessOrdersServicesImpl extends ServiceBase  implements ProcessOr
 		LoadOdersLiveMessaging load = new LoadOdersLiveMessagingImpl(messages);
 		executor.submit(load);
 		for(Entry<String, CopyOnWriteArrayList<CurrencyOrder>> buyEntry : OrdersCache.buyOrders.entrySet()){
-			matching = new MatchingServiceMultiProcessingImpl(buyEntry.getKey());
+			matching = new MatchingServiceMultiProcessingImpl(buyEntry.getKey(), currencyRepository);
 			executor.submit(matching);
 		}
 		executor.shutdown();

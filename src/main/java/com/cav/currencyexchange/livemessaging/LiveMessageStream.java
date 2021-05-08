@@ -5,9 +5,11 @@ import javax.jms.JMSException;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jms.annotation.JmsListener;
 import org.springframework.stereotype.Component;
 
+import com.cav.currencyexchange.repository.CurrencyRepository;
 import com.cav.currencyexchange.service.processorders.ProcessOrdersServices;
 import com.cav.currencyexchange.service.processorders.ProcessOrdersServicesImpl;
 import com.cav.currencyexchange.utils.Constants;
@@ -18,6 +20,9 @@ public class LiveMessageStream {
 	
 	private static final Logger log = LoggerFactory.getLogger(LiveMessageStream.class);
 	
+	@Autowired
+	CurrencyRepository currencyRepository;
+	
 	/**
 	 *  Spawns a new thread for each message recieved
 	 * @param message
@@ -25,14 +30,8 @@ public class LiveMessageStream {
 	 */
 	@JmsListener(destination = "${activemq.topic}", containerFactory = "topicListenerFactory")
 	public void receiveOrdersFromBrokers(Orders message) throws JMSException {
-		log.info("receiveOrdersFromBrokers Enter");
-		
-		
-		ProcessOrdersServices service = new  ProcessOrdersServicesImpl(message.getOrder());
+		ProcessOrdersServices service = new  ProcessOrdersServicesImpl(message.getOrder(),  currencyRepository);
 		Constants.EXECUTOR.submit(service);
-		
-		
-		
 	}
 
 }

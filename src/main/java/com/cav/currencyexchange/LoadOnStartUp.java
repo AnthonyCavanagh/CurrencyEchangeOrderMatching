@@ -10,14 +10,19 @@ import javax.annotation.PostConstruct;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import com.cav.currencyexchange.cache.AccountCache;
+import com.cav.currencyexchange.entities.Currency;
+import com.cav.currencyexchange.repository.CurrencyRepository;
 import com.cav.currencyexchange.utils.Constants;
 
 @Component
 public class LoadOnStartUp {
+	
+	@Autowired
+    CurrencyRepository currencyRepository;
 	
 	private static final Logger log = LoggerFactory.getLogger(LoadOnStartUp.class);
 	
@@ -60,7 +65,7 @@ public class LoadOnStartUp {
 					
 					Constants.EXECUTOR = Executors.newFixedThreadPool(500);
 
-					addAccountFullMatch2Partners();
+					updateAccountCache();
 				} catch (IOException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
@@ -75,11 +80,13 @@ public class LoadOnStartUp {
 			}
 	}
 	
-	 private  void addAccountFullMatch2Partners() {
-			AccountCache.accounts.put(PARTNER_A_GBP, new BigDecimal(1000000));
-			AccountCache.accounts.put(PARTNER_A_USD, new BigDecimal(1000000));
-			AccountCache.accounts.put(PARTNER_B_GBP, new BigDecimal(1000000));
-			AccountCache.accounts.put(PARTNER_B_USD, new BigDecimal(1000000));
-		  }
+	private void updateAccountCache() {
+		Iterable<Currency> iter = currencyRepository.findAll();
+		iter.forEach(c->updateCache(c));
+	}
+	 
+	 private void updateCache(Currency currency) {
+			AccountCache.accounts.put(currency.getCurrencyId(), new BigDecimal(currency.getAmount()));
+		}
 
 }

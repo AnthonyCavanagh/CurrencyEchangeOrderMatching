@@ -7,6 +7,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Service;
 
 import com.cav.currencyexchange.cache.OrdersCache;
 import com.cav.currencyexchange.models.CurrencyOrder;
@@ -55,7 +56,7 @@ public class MatchingServiceImpl extends ServiceBase implements MatchingService 
 					for(CurrencyOrder sell : sells){
 						BigDecimal sellAmount = getAmount(buy.getAmount(), buy.getExchangeRate());
 						if(hasFunds(sell.getPartnerId() +currencyB, sellAmount)  && sell.getExpirationDate().isAfter(checkDateTime) && sell.getStatus().equals(Status.UNMATCHED)){
-							if(matchFull(buy, sell, currencyA, currencyB, sellAmount)) {
+							if(matchFull(buy, sell, currencyA, currencyB, sellAmount, null)) {
 								break;
 							}
 						} else {

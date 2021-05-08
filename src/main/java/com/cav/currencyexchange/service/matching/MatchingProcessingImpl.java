@@ -7,10 +7,12 @@ import java.util.concurrent.locks.ReentrantLock;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Service;
 
 import com.cav.currencyexchange.cache.OrdersCache;
 import com.cav.currencyexchange.models.CurrencyOrder;
 import com.cav.currencyexchange.models.Status;
+import com.cav.currencyexchange.repository.CurrencyRepository;
 import com.cav.currencyexchange.service.ServiceBase;
 
 public class MatchingProcessingImpl extends ServiceBase implements MatchingProcessing {
@@ -24,12 +26,13 @@ public class MatchingProcessingImpl extends ServiceBase implements MatchingProce
 	String currencyB = null;
 	LocalDateTime checkDateTime = null;
 	ReentrantLock lock = null;
+	CurrencyRepository currencyRepository = null;
 
 	
 	
 
 	public MatchingProcessingImpl(CurrencyOrder buy, String currencyKeyPair, String currencyA, String currencyB,
-			LocalDateTime checkDateTime, ReentrantLock lock) {
+			LocalDateTime checkDateTime, ReentrantLock lock, CurrencyRepository currencyRepository) {
 		super();
 		this.buy = buy;
 		this.currencyKeyPair = currencyKeyPair;
@@ -37,6 +40,7 @@ public class MatchingProcessingImpl extends ServiceBase implements MatchingProce
 		this.currencyB = currencyB;
 		this.checkDateTime = checkDateTime;
 		this.lock = lock;
+		this.currencyRepository = currencyRepository;
 	}
 
 	@Override
@@ -55,19 +59,16 @@ public class MatchingProcessingImpl extends ServiceBase implements MatchingProce
 		for(CurrencyOrder sell : sells){
 			BigDecimal sellAmount = getAmount(buy.getAmount(), buy.getExchangeRate());
 			if(hasFunds(sell.getPartnerId() +currencyB, sellAmount)  && sell.getExpirationDate().isAfter(checkDateTime) && sell.getStatus().equals(Status.UNMATCHED)){
-				log.info("Lock is set to "+lock.isLocked());
 					lock.lock();
-					log.info("Match orders for sell "+sell.getStatus());
 					 //Potential race condition CurrencyOrder could be processed while lock is being acquired
 					 if(sell.getStatus().equals(Status.UNMATCHED)) {
-						if(matchFull(buy, sell, currencyA, currencyB, sellAmount)) {
+						if(matchFull(buy, sell, currencyA, currencyB, sellAmount, currencyRepository)) {
 							log.info("Matched order for buy "+buy.toString());
 							log.info("Matched order for buy "+sell.toString());
 							lock.unlock();
 							break;
 						} 
 					} 
-					log.info("unlock lock ");
 					lock.unlock();
 			} else {
 				buy.setStatus(Status.UNMATCHED);

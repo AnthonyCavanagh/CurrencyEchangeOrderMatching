@@ -34,10 +34,8 @@ public class LoadOdersLiveMessagingImpl extends ServiceBase  implements LoadOder
 		ExecutorService executor = Executors.newFixedThreadPool(2);
 		for(Order order : messages){
 			if(SELL.equals(order.getOrderType())){
-				log.info("Load sell order "+order.getOrderId());
 				sellOrders.add(order);
 			} else {
-				log.info("Load buy order "+order.getOrderId());
 				buyOrders.add(order);
 			}
 		}

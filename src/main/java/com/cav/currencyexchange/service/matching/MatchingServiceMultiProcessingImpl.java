@@ -11,11 +11,13 @@ import java.util.concurrent.locks.ReentrantLock;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Service;
 
 import com.cav.currencyexchange.cache.AccountCache;
 import com.cav.currencyexchange.cache.OrdersCache;
 import com.cav.currencyexchange.models.CurrencyOrder;
 import com.cav.currencyexchange.models.Status;
+import com.cav.currencyexchange.repository.CurrencyRepository;
 import com.cav.currencyexchange.service.ServiceBase;
 
 /**
@@ -23,6 +25,7 @@ import com.cav.currencyexchange.service.ServiceBase;
  * @author Tony
  *
  */
+
 public class MatchingServiceMultiProcessingImpl extends ServiceBase implements MatchingService {
 	
 	
@@ -31,14 +34,16 @@ public class MatchingServiceMultiProcessingImpl extends ServiceBase implements M
 	String currencyA = null;
 	String currencyB = null;
 	ReentrantLock lock = new ReentrantLock();
+	CurrencyRepository currencyRepository = null;
 
 
-	public MatchingServiceMultiProcessingImpl(String currencyKeyPair) {
+	public MatchingServiceMultiProcessingImpl(String currencyKeyPair, CurrencyRepository currencyRepository) {
 		super();
 		this.currencyKeyPair = currencyKeyPair;
 		String[] fields = currencyKeyPair.split("/");
 		currencyA = fields[0];
 		currencyB = fields[1];
+		this.currencyRepository = currencyRepository;
 	}
 
 	@Override
@@ -58,13 +63,12 @@ public class MatchingServiceMultiProcessingImpl extends ServiceBase implements M
 		LocalDateTime checkDateTime = LocalDateTime.now();
 		CopyOnWriteArrayList<CurrencyOrder> buys = OrdersCache.buyOrders.get(currencyKeyPair);
 		if(buys != null){
-			log.info("Matching service number of buys is "+OrdersCache.buyOrders.size());
 			ExecutorService executor = Executors.newFixedThreadPool(OrdersCache.buyOrders.size());
 			// to speed up the process, each search spawns a thread, 
 			for(CurrencyOrder buy : buys){
 				if(hasFunds(buy.getPartnerId()+currencyA, buy.getAmount()) && buy.getExpirationDate().isAfter(checkDateTime) && buy.getStatus().equals(Status.UNMATCHED)){
 					buy.setStatus(Status.MATCHED);
-					MatchingProcessing service = new MatchingProcessingImpl(buy, currencyKeyPair, currencyA, currencyB, checkDateTime, lock);
+					MatchingProcessing service = new MatchingProcessingImpl(buy, currencyKeyPair, currencyA, currencyB, checkDateTime, lock, currencyRepository);
 					executor.submit(service);
 				}
 			}

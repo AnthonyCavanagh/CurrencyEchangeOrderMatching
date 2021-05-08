@@ -64,7 +64,7 @@ public class BaseServiceTest {
 		ExecutorService executor = Executors.newFixedThreadPool(15);
 		MatchingService service = null;
 		for(Entry<String, CopyOnWriteArrayList<CurrencyOrder>> buyEntry : OrdersCache.buyOrders.entrySet()){
-			service = new MatchingServiceMultiProcessingImpl(buyEntry.getKey());
+			service = new MatchingServiceMultiProcessingImpl(buyEntry.getKey(), null);
 			executor.submit(service);
 		}
 		executor.shutdown();

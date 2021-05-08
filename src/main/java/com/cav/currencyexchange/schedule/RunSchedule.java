@@ -25,12 +25,10 @@ public class RunSchedule {
 		ExecutorService executor = Executors.newFixedThreadPool(10);
 		RemoveOrderServiceImpl service;
 		for(Entry<String, CopyOnWriteArrayList<CurrencyOrder>> sellEntry : OrdersCache.sellOrders.entrySet()){
-			log.info("Schedule Remove orders for sell for "+sellEntry.getKey());
 			service = new RemoveOrderServiceImpl(sellEntry.getKey(), "Sell");
 			executor.submit(service);
 		}
 		for(Entry<String, CopyOnWriteArrayList<CurrencyOrder>> buyEntry : OrdersCache.buyOrders.entrySet()){
-			log.info("Schedule Remove orders for buy for "+buyEntry.getKey());
 			service = new RemoveOrderServiceImpl(buyEntry.getKey(), "Buy");
 			executor.submit(service);
 		}

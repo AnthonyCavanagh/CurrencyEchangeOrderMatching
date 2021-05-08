@@ -16,15 +16,22 @@ import javax.xml.bind.Unmarshaller;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import com.cav.currencyexchange.cache.AccountCache;
+import com.cav.currencyexchange.entities.Account;
+import com.cav.currencyexchange.entities.Currency;
 import com.cav.currencyexchange.models.CurrencyOrder;
 import com.cav.currencyexchange.models.Status;
+import com.cav.currencyexchange.repository.CurrencyRepository;
 import com.cav.currencyexchangebroker.generated.Orders;
 
 
 
 public abstract class ServiceBase {
+	
+	
+    CurrencyRepository currencyRepository;
 
 	protected static final String SELL ="Sell";
 	protected static final String BUY ="Buy";
@@ -126,7 +133,7 @@ public abstract class ServiceBase {
 	 * @param buyAmount
 	 * @param sellAmount
 	 */
-	protected boolean matchFull(CurrencyOrder buy, CurrencyOrder sell, String baseCurrency,  String quoteCurrency, BigDecimal sellAmount) {
+	protected boolean matchFull(CurrencyOrder buy, CurrencyOrder sell, String baseCurrency,  String quoteCurrency, BigDecimal sellAmount, CurrencyRepository currencyRepository) {
 		sell.setStatus(Status.MATCHED);
 		BigDecimal buyAmount = buy.getAmount();
 		String partnerABaseCurrency = buy.getPartnerId() + baseCurrency;
@@ -139,12 +146,44 @@ public abstract class ServiceBase {
 				//Need to check again, there is enough currency in both to carry out the transaction
 				//Another thread may have completed.
 				if(hasFunds(partnerABaseCurrency, buyAmount) && hasFunds(partnerBQuoteCurrency, sellAmount)) {
+					
+					BigDecimal partnerAbuyAmount = null;
+					BigDecimal partnerASellAmount = null;
+					BigDecimal partnerBbuyAmount= null;
+					BigDecimal partnerBSellAmount= null;
+					try {
 					//Partner A Buy BaseCurrency for QuoteCurrency
+					Account buyAccount = new Account(buy.getPartnerId(), buy.getPartnerId());
 					AccountCache.accounts.merge(partnerAQuoteCurrency, sellAmount, BigDecimal::add);
+					partnerAbuyAmount = AccountCache.accounts.get(partnerAQuoteCurrency);
+					
+					currencyRepository.save(new Currency(partnerAQuoteCurrency, quoteCurrency, partnerAbuyAmount.toString(), buyAccount));
+					
 					AccountCache.accounts.merge(partnerABaseCurrency, buyAmount, BigDecimal::subtract);
+					partnerASellAmount = AccountCache.accounts.get(partnerABaseCurrency);
+					currencyRepository.save(new Currency(partnerABaseCurrency, baseCurrency, partnerASellAmount.toString(), buyAccount));
+					
+					
 					// Partner B Sell QuoteCurrency for BaseCurrency
-					AccountCache.accounts.merge(partnerBQuoteCurrency, sellAmount, BigDecimal::subtract);
+					Account sellAccount = new Account(sell.getPartnerId(), sell.getPartnerId());
 					AccountCache.accounts.merge(partnerBBaseCurrency, buyAmount, BigDecimal::add);
+					partnerBbuyAmount = AccountCache.accounts.get(partnerBBaseCurrency);
+					currencyRepository.save(new Currency(partnerBBaseCurrency, baseCurrency, partnerBbuyAmount.toString(), sellAccount));
+					
+					
+					AccountCache.accounts.merge(partnerBQuoteCurrency, sellAmount, BigDecimal::subtract);
+					partnerBSellAmount = AccountCache.accounts.get(partnerBQuoteCurrency);
+					currencyRepository.save(new Currency(partnerBQuoteCurrency, quoteCurrency, partnerBSellAmount.toString(), sellAccount));
+					
+					} catch(Exception e) {
+						e.printStackTrace();
+					} finally {
+						log.info("Partner A Buy "+partnerAQuoteCurrency+" "+partnerAbuyAmount);
+						log.info("Partner A Sell "+partnerABaseCurrency+" "+partnerASellAmount);
+						log.info("Partner B Buy "+partnerBQuoteCurrency+" "+partnerBbuyAmount);
+						log.info("Partner B Sell "+partnerBBaseCurrency+" "+partnerBSellAmount);
+					}
+					
 
 					buy.setStatus(Status.REMOVE);
 					sell.setStatus(Status.REMOVE);
@@ -153,7 +192,6 @@ public abstract class ServiceBase {
 				} 
 				buy.setStatus(Status.UNMATCHED);
 				sell.setStatus(Status.UNMATCHED);
-				
 		}
 		return false;
 	}
